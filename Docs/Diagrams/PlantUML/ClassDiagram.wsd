@@ -1,0 +1,683 @@
+@startuml ClassDiagram
+
+    hide empty members
+    class Tile {
+        + {field} position : (byte x, byte y);
+        + type : byte;
+        + Tile();
+        + Tile((byte x, byte y), byte);
+        + ToString() : string;
+    }
+
+    class MapLayout {
+        + {field} position : (int x, int y);
+        + tileSetNum : int;
+        + initPathID : int;
+        + relevantPaths : List<int, byte>;
+        + MapLayout();
+        + MapLayout((int x, int y), int, int);
+        + ToString() : string;
+    }
+
+    class TileSet {
+        + tiles : List<Tile>;
+        + pathTiles : List<List<Tile>>;
+        + endTile : Tile;
+        + DirCardinals : List<(byte, byte)>;
+        + height, width : byte;
+    }
+
+    class TileSetGenerator {
+        - tileSet : TileSet;
+        - tileSetHeight, tileSetWidth : byte;
+        - currentTile : Tile;
+        - {field} reached : (bool x, bool y);
+        - {field} DirCardinals : (byte start, byte end);
+        - numStartPoints : int;
+        - currIndex, nextIndex : int;
+        + TileSetGenerator(byte, byte, int);
+        + TileSetGenerator(byte, byte, Tile, int);
+        + TileSetGenerator(byte, byte, Tile, byte, int);
+        - initializeFromNumStartPoints(int) : void;
+        + getTileSet() : TileSet;
+        - getTopEdgeTiles() : List<Tile>;
+        - getLeftEdgeTiles() : List<Tile>;
+        - getRightEdgeTiles() : List<Tile>;
+        - getBottomEdgeTiles() : List<Tile>;
+        - coreStartGen() : void;
+        - adjustImportedEnd() : void;
+        - generateAdditionalStarts() : void;
+        - generateStartEnd() : void;
+        - generateStart() : void;
+        - moveDown(byte) : void;
+        - moveUp(byte) : void;
+        - moveRight(byte) : void;
+        - moveLeft(byte) : void;
+        - generateQuadrantNodes() : List<Tile>;
+        - cullLoopPaths(int) : void;
+        - patchPath(int) : void;
+        - PathingLogic(List<Title>, bool, byte) : void;
+        - findOffshootPaths() : void;
+        - generatePath() : void;
+        - generateTileset() : void;
+        + ToString() : string;
+    }
+
+    class MapGenerator {
+        + {static} main :  MapGenerator;
+        + mapTile : GameObject;
+        + pathTile : GameObject;
+        + portalTile : GameObject;
+        + homeTile : GameObject;
+        - tilesetWidth, tilesetHeight : byte;
+        - generateAsIsometric : bool;
+        - spriteWidth : float;
+        - spriteHeight : float;
+        - disableGen : bool;
+        + {static} mapTiles : List<GameObject>;
+        + {static} pathTiles : List<List<GameObject>>;
+        + {static} tileSets : List<TileSet>;
+        + {static} mapLayout : List<MapLayout>;
+        + {static} expandableTiles : List<MapLayout>;
+        + {static} spawnTiles : List<GameObject>;
+        + {static} endTile : GameObject;
+        - maxDirectionalStraightness : int;
+        - {static} straightLineCounter : int;
+        - {static} lastSplitCounter : int;
+        - prevcount : int;
+        - Start() : void;
+        - Update() : void;
+        + getTilesetDimensions() : (int, int);
+        + getSpriteSize() : float;
+        + {static} clearMapGenerator() : void;
+        + checkExpandability((int, int), int) : bool;
+        - checkAvailableExpansionDirections(MapLayout) : List<int>;
+        - updateAvailableExpansionVectors() : void;
+        - drawMapTiles(TileSet, (int, int)) : void;
+        - drawPathTiles(TileSet, (int, int), bool, int, int) : void;
+        + randomExpand() : void;
+        + expandMap(MapLayout) : bool;
+        + GenerateMap() : void;
+        - generateMap() : void;
+    }
+
+    class SpriteLoader {
+        - importSprites : Sprite[];
+        - {static} Sprites : Dictionary<string, Sprite>;
+        # LoadDictionary() : void;
+        + GetSpriteCount(string) : int;
+        + GetSpriteByName(string) : Sprite;
+
+    }
+
+    class MapRenderer {
+        + {static} main : MapRenderer;
+        - previousMapCount : int;
+        + {static} activeRenderer : bool;
+        # Start() : void;
+        # FixedUpdate() : void;
+        + {static} triggerRenderer() : void;
+        + UpdateSortingOrder() : void;
+        - updateSortingLayerValue() : void;
+        + UpdateSplitPathSprite(GameObject, Tile, Tile) : void;
+        + SelectPathSprite(GameObject, Tile, Tile, Tile) : void;
+        + StitchPathSprite(GameObject, GameObject, Vector3) : void;
+    }
+
+    MapRenderer <-o SpriteLoader: Inherits
+
+    MapLayout <-* MapGenerator: Stores MapLayout for layout of the map
+    MapLayout *--> TileSet: Stores specific tileset data for the map
+    MapGenerator *--> TileSetGenerator: Generates TileSets for Map
+    MapGenerator *--> MapRenderer: Holds Sprite data and handles sortingOrder of mapTiles
+    TileSetGenerator *-> TileSet: Creates TileSet
+    TileSet *--> Tile: Contains Tiles
+    MapGenerator *--> TileSet: Stores TileSets for Map
+
+    class TurretSpriteRenderer {
+        + {static} main : TurretSpriteRenderer;
+        - previousMapCount : int;
+        + {static} activeRenderer : bool;
+        # Start() : void;
+        # FixedUpdate() : void;
+        + UpdateSortingOrder() : void;
+        - updateSortingLayerValue() : void;
+        + UpdateTurretUnitSprite(Transform, sprite, float) : void;
+    }
+
+    TurretSpriteRenderer <-o SpriteLoader: Inherits
+
+    class BarrelRotation {
+        + pivot : Quaternion;
+        - barrel : Transform;
+        - tower : Towers;
+        - spriteName : string;
+        - oldAngle : float;
+        - FixedUpdate() : void;
+        - updateData() : void;
+    }
+
+    class Towers {
+        - range : float;
+        # damage : float;
+        - timeBtwShots : float;
+        # towerCost : int;
+        # towerName : string;
+        # barrelRotation : BarrelRotation;
+        # boons : List<BoonType>;
+        - nextTimeToShoot : float;
+        + currentTarget : GameObject;
+        + menu : GameObject;
+        + barrel : Transform;
+        + projectile : GameObject;
+        + aimReady : bool;
+        + upgraded : bool;
+        - Awake() : void;
+        - Start() : void;
+        - OnMouseDown() : void;
+        - FixedUpdate() : void;
+        + triggerAim() : void;
+        - updateClosestEnemy() : void;
+        # shoot() : void;
+        + upgrade() : void;
+        + canUpgrade() : bool;
+        + addBoon(BoonType) : void;
+        + removeBoon(BoonType) : void;
+        + getDamage() : float;
+        + getCost() : int;
+        + getName() : string;
+        + getUpgradeCost() : int;
+    }
+
+    class Bullet {
+        + Damage : float;
+        + Target : GameObject;
+        # Start() : void;
+        # FixedUpdate() : void;
+        # OnCollisionEnter2D(Collision2D) : void;
+        # OnBulletCollisionEffect() : void;
+    }
+
+    class AOEBullet {
+        + radius : float;
+        - apexPoint : Vector3;
+        - finalPoint : Vector3;
+        - parabolicHeight : float;
+        - t : float;
+        # Start() : void;
+        # FixedUpdate() : void;
+        - calcBoziersCurve() : void;
+        - updateRotation() : void;
+        # OnBulletCollisionEffect() : void;
+    }
+
+    class ElementalShot {
+        + Element : string;
+        + EffectDuration : float;
+        + upgraded : bool;
+        # OnBulletCollisionEffect() : void;
+    }
+
+    class ElementalTowers {
+        + element : string;
+        + effectDuration : float;
+        # shoot() : void;
+    }
+
+    ElementalTowers <..o Towers: Inherits
+    ElementalShot <..o Bullet: Inherits
+    AOEBullet <..o Bullet: Inherits
+    Bullet --> Towers: Is shot by
+    Towers --> BarrelRotation: Rotates barrel
+    ElementalShot --> ElementalTowers: Is shot by
+
+
+    enum ElementType {
+        None, Ice, Fire, Water, Lightning;
+    }
+
+    enum AbilityType {
+        None, Spawn, DeadSpawn, Shield, Heal, Sprint, Overcharge;
+    }
+
+    enum StatusType {
+        None, Frozen, Electrocuted, Burning, 
+        Stunned, Overcharged, Sprinting, Shielded;
+    }
+
+    enum BoonType {
+        Power, Swiftness, Farsight, Fortune;
+    }
+
+    class Boon {
+        # boonCost : int;
+        # boonName : string;
+        + boonType : BoonType;
+        + towersInRange : List<GameObject>;
+        + enemiesInRange : List<GameObject>;
+        + duration : float;
+        + range : float;
+        - timeCheck : float;
+        - Start() : void;
+        - FixedUpdate() : void;
+        - updateDuration() : void;
+        - updateTowersInRange() : void;
+        - updateEnemiesInRange() : void;
+        - destroyBoon() : void;
+        + getCost() : int;
+        + getName() : string;
+    }
+
+    class Ability {
+        + abilityType : AbilityType;
+        + cooldown : float;
+        + duration : float;
+        # maxDuration : float;
+        # maxCooldown : float;
+        # ConstructAbility(AbilityType, float, float) : void;
+        + startAbility() : void;
+        + updateAbility(float) : void;
+        + isRunning() : bool;
+        + isReady() : bool;
+        + updateCooldown(float) : void;
+        + updateDuration(float) : void;
+        # getEnemiesInRanger(Vector3, float) : List<GameObject>;
+    }
+
+    class HealerAbility {
+        # range : float;
+        + ConstructAbility(AbilityType, float, float, float) : void;
+        + castHealing(Vector3) : void;
+        - IAbilityCastHealing(Vector3) : IEnumerator;
+    }
+
+    class SpawnerAbility {
+        # enemy : GameObject;
+        + count : byte;
+        + ConstructAbility(AbilityType, GameObject, int, float, float) : void;
+        + spawnEnemies(Vector3, GameObject, int) : void;
+        - IAbilitySpawnEnemies(Vecto3, GameObject, int) : IEnumerator;
+    }
+
+    class StatusCasterAbility {
+        # type : StatusType;
+        # range : float;
+        + ConstructAbility(AbilityType, float, float, float) : void;
+        # constructStatusTypeFromAbilityType(AbilityType) : StatusType;
+        + castStatus(Vector3) : void;
+        - IAbilityCastStatus(Vector3) : IEnumerator;
+    }
+
+    class Status {
+        + statusType : StatusType;
+        + duration : float;
+        + Status(StatusType, float);
+        + updateDuration(float) : void;
+    }
+
+    SpawnerAbility <..o Ability: Inherits
+    HealerAbility <..o Ability: Inherits
+    Ability <--* AbilityType: Contains
+    StatusCasterAbility <..o Ability: Inherits
+    StatusCasterAbility <-- Status: Casts
+    Status <--* StatusType: Contains
+
+    Boon <--* BoonType: Contains
+    Boon --> Towers: Affects
+
+    class Enemy {
+        # maxEnemyHealth : float;
+        # maxMovementSpeed : float;
+        + enemyHealth : float;
+        + movementSpeed : float;
+        # killReward : int;
+        + {static} damage : float;
+        + {static} toMainMenu : int;
+        # statuses : List<Status>;
+        + Statuses : List<Status>;
+        # allowDamage : bool;
+        # overcharged : bool;
+        # boons : List<BoonType>;
+        # timeCheck : float;
+        # targetTile : GameObject;
+        # pathID : int;
+        # waitForTarget : bool;
+        - enemyFinished : bool;
+        + direction : Vector2;
+        + currScale : Vector3;
+        - Awake() : void;
+        # Start() : void;
+        # FixedUpdate() : void;
+        + initializeEnemy(GameObject, int) : void;
+        + takeDamage(float) : void;
+        + healDamage(float) : void;
+        + levelUpMaxHealth(float) : void;
+        + overchargeHealth(float) : void;
+        + changeMovementSpeed(float) : void;
+        + overchargeSpeed(float) : void;
+        + setToNormalSpeed() : void;
+        # enemyDead() : void;
+        # moveEnemy() : void;
+        + checkPosition() : void;
+        + {static} resetForMainMenu() : void;
+        + addStatus(Status) : void;
+        + removeStatus(Status) : void;
+        - checkStatuses() : void;
+        # applyStatus() : void;
+        + addBoon(BoonType) : void;
+        + removeBoon(BoonType) : void;
+    }
+
+    Boon --> Enemy: Affects
+
+    class SpecialEnemy {
+        + abilityType : AbilityType;
+        # specialAbility : Ability;
+        # abilityPrefab : GameObject;
+        # maxDuration : float;
+        # maxCooldown : float;
+        # abilityCount : int;
+        # abilityRange : float;
+        # randomizeAbility : bool;
+        # Start() : void;
+        # FixedUpdate() : void;
+        - initializeAbility() : void;
+        # enemyDead() : void;
+        - checkSpecialAbility() : void;
+        + useSpecialAbility() : void;
+    }
+
+    Enemy <..o SpecialEnemy: Inherits
+    SpecialEnemy <-- Ability: Uses
+
+    Towers --> Enemy: Can shoot
+    ElementalShot <--* ElementType: Contains
+    Enemy <-- ElementType: Effected by
+    Bullet --> Enemy: Can damage
+
+    class TimeHandler {
+        + {static} main : TimeHandler;
+        - Start() : void;
+        + {static} StartGameTime() : void;
+        + {static} PauseGameTime() : void;
+    }
+
+    class FastForward {
+        + quadTime : bool;
+        + doubleTime : bool;
+        + SpeedUp() : void;
+    }
+
+    class CameraController {
+        + {static} main : CameraController; 
+        - MouseScrollStartPos : Vector3;
+        - mainCamera : Camera;
+        - MoveSpeed : float;
+        - ZoomSpeed : float;
+        - spriteSize : float;
+        - Start() : void;
+        - Update() : void;
+        - HandleKeyInput() : bool;
+        - HandleMouseInput() : bool;
+        - HandleWheelScroll() : void;
+    }
+
+    class CostDisplay {
+        - nameTxt : Text;
+        - costTxt : Text;
+        - BasicTower : GameObject;
+        - Start() : void;
+        - Update() : void;
+    }
+
+    class Counter {
+        + {static} enemies : List<GameObject>;
+        + {static} clearCounter() : void;
+    }
+
+    Counter *--> Enemy: Stores Enemy
+
+    class BoonCostDisplay {
+        - nameTxt : Text;
+        - costTxt : Text;
+        - Boon : GameObject;
+        - Start() : void;
+        - Update() : void;        
+    }
+
+    class CostDisplay {
+        - nameTxt : Text;
+        - costTxt : Text;
+        - BasicTower : GameObject;
+        - Start() : void;
+        - Update() : void;
+    }
+
+    CostDisplay *--> Towers: Displays Cost
+    BoonCostDisplay *--> Boon: Displays Cost
+
+    class ExpandButton {
+        + data : MapLayout;
+        - Update() : void;
+        + setData(MapLayout) : void;
+    }
+
+    ExpandButton *--> MapLayout: Stores MapLayout
+
+    class GameOverBG {
+        + Show() : void;
+        + Hide() : void;
+    }
+
+    TimeHandler <-- GameOverBG: Utilizes
+
+    class HealthBar {
+        - health : Image;
+        - healthBarTxt : Text;
+        + {static} lives : float;
+        - Start() : void;
+        - Update() : void;
+        + updatePLayerHealth(float, float) : void;
+    }    
+
+    class PauseMenu {
+        + GameIsPaused : bool;
+        + pauseMenuUI : GameObject;
+        - Update() : void;
+        + Resume() : void;
+        + Pause() : void;
+        + LoadMenu() : void;
+        + QuitGame() : void;
+    }
+
+    TimeHandler <-- PauseMenu: Utilizes
+
+    class Scene2Handler {
+        + {static} NewGame() : void;
+        + {static} mainMenu() : void;
+        + {static} clearListsFromGameScene() : void;
+        + {static} Quit() : void;
+    }
+
+    TimeHandler <-- Scene2Handler: Utilizes
+
+    class SceneHandler {
+        + {static} loadNewGame() : void;
+        + {static} Quit() : void;
+    }
+
+    class UIExpandButtonController {
+        + buttonPrefab : GameObject;
+        + {static} buttons : List<GameObject>;
+        - {static} triggered : bool;
+        - Update() : void;
+        + {static} trigger(MapLayout) : void;
+        - generateButtons() : void;
+    }
+
+    class UIScrollViewController {
+        - scrollRect : ScrollRect;
+        - leftButton : GameObject;
+        - rightButton : GameObject;
+        - text : Text;
+        - scrollSpeed : float;
+        - shopName : string;
+        - distanceY : float;
+        - isHidden : bool;
+        + LeftButtonClick() : void;
+        + RightButtonClick() : void;
+        + DisplayButtonClick() : void;
+    }
+
+    UIExpandButtonController *--> ExpandButton: Creates
+    UIExpandButtonController <--* ExpandButton: Contains
+
+    class UpgradeManager {
+        + {static} main : UpgradeManager;
+        + shopManager : ShopManager;
+        + menuUI : GameObject;
+        + {static} dummyUI : GameObject;
+        + upgradeButton : GameObject;
+        + {static} dummyUpgradeButton : GameObject;
+        - {static} currentTower : GameObject;
+        - Start() : void;
+        + Open(GameObject) : void;
+        + Upgrade() : void;
+        + Sell() : void;
+        + Close() : void;
+        - FixedUpdate() : void;
+    }
+
+    UpgradeManager *--> Towers: Upgrades
+
+    class GameController {
+        + GameOver : GameOverBG;
+        - isGameOver : bool;
+        - Update() : void;
+    }
+
+    GameController <--* GameOverBG: Contains
+    GameController <--* HealthBar: References
+    GameController <-- GameOver: Calls
+
+    class CanvasManager {
+        + {static} main : CanvasManager;
+        - canvasObjects : GameObject[];
+        - Start() : void;
+        + Show() : void;
+        + Hide() : void;
+    }
+
+    class FrameRateManager {
+        - frameRate : byte;
+        - Start() : void;
+        - changeFramerate() : IEnumerator;
+    }
+
+    class MoneyManager {
+        - playerMoneyTxt : Text;
+        + {static} main : MoneyManager;
+        - {static} currPlayerMoney : int;
+        - counter : int;
+        + startMoney : int;
+        - Start() : void;
+        + GetCurrMoney() : int;
+        + addMoney(int) : void;
+        + removeMoney(int) : void;
+        + Hide() : void;
+        + Show() : void;
+    }
+
+    MoneyManager --> Enemy: Adds money on kill
+
+    class ShopManager {
+        + {static} main : ShopManager;
+        + moneyManager : MoneyManager;
+        - Start() : void;
+        + GetTowerCost(GameObject) : int;
+        + GetUpgradeCost(GameObject) : int;
+        + GetBoonCost(GameObject) : int;
+        + buyTower(GameObject) : void;
+        + sellTower(GameObject) : void;
+        + upgradeTower(GameObject) : void;
+        + canUpgradeTower(GameObject) : bool;
+        + buyBoon(GameObject) : void;
+        + canBuyTower(GameObject) : bool;
+        + canBuyBoon(GameObject) : bool;
+    }
+
+    class PlacementManager {
+        + {static} main : PlacementManager;
+        + shopManager : ShopManager;
+        - currTowerPlacing : GameObject;
+        - dummyPlacement : GameObject;
+        - hoverTile : GameObject;
+        + cam : Camera;
+        + mask : LayerMask;
+        + towerMask : LayerMask;
+        - flag : bool;
+        + isBuilding : bool;
+        - Start() : void;
+        - Update() : void;
+        + GetMousePosition() : Vector2;
+        + GetCurrentHoverTile() : void;
+        + checkForTower() : bool;
+        + Placement() : void;
+        + PlaceBoon() : void;
+        + PlaceBuilding() : void;
+        + StartPlacing(GameObject) : void;
+        + EndPlacement() : void;
+    }
+
+    ShopManager <--* PlacementManager: Stores ShopManager
+    ShopManager *--> MoneyManager: Stores MoneyManager
+    ShopManager <--o CostDisplay: Displays Cost
+    PlacementManager <--o Towers: Places Towers
+
+    class RoundController {
+        + {static} main : RoundController;
+        - enemyPrefabs : GameObject[];
+        - bossPrefab : GameObject;
+        + timeBtwWaves : float;
+        + timeBeforeRoundStarts : float;
+        + timeVar : float;
+        + isRoundGoing : bool;
+        + isIntermission : bool;
+        + isStartOfRound : bool;
+        + round : int;
+        - minionValue : byte;
+        - specialValue : byte;
+        - tankValue : byte;
+        - spawnerValue : byte;
+        - spawnerCounter : int;
+        - Start() : void;
+        - FixedUpdate() : void;
+        - getEnemySpawnOrder() : List<GameObject>;
+        - spawnEnemies() : void;
+        - ISpawnEnemies() : IEnumerator;
+    }
+
+    entity GameScene {}
+    GameScene *--> RoundController: Uses RoundController to spawn Enemies
+    GameScene *--> PlacementManager: Uses PlacementManager for Towers
+    GameScene *--> GameController: Uses GameController for GameOver
+    GameScene *--> HealthBar: Updates HealthBar in Canvas
+    GameScene *--> CameraController: Uses CameraController to move Camera
+    GameScene *--> MapGenerator: Uses MapGenerator to generate Map
+    GameScene *--> PauseMenu: Uses PauseMenu to pause Game
+    GameScene *--> CostDisplay: Uses CostDisplay to display Tower Cost
+    GameScene *--> FastForward: Uses FastForward to speed up Game
+    GameScene *--> UIScrollViewController: Uses UIScrollViewController to control Shop UI elements
+    GameScene *--> UpgradeManager: Controls UI for Upgrading Towers
+    GameScene *--> CanvasManager: Manages displaying of Canvas elements
+    GameScene *--> FrameRateManager: Manages FrameRate
+
+
+    entity StartScene {}
+    StartScene *--> SceneHandler: Uses SceneHandler to load GameScene
+    StartScene *--> Scene2Handler: Uses Scene2Handler to load GameScene
+    
+    SceneHander *--> GameScene: Loads GameScene
+    Scene2Hander *--> GameScene: Loads GameScene
+
+@enduml
